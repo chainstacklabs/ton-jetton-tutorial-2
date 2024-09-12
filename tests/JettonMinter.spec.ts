@@ -42,7 +42,8 @@ describe('State init tests', () => {
                     wallet_code: jwallet_code,
                     jetton_content: jettonContentToCell({
                         uri: "https://ton.org/"
-                    })
+                    }),
+                    capped_supply: 1000n
                 },
                 minter_code));
 
@@ -73,7 +74,7 @@ describe('State init tests', () => {
     });
 
     it('should mint max jetton walue', async () => {
-        const maxValue = (2n ** 120n) - 1n;
+        const maxValue = (await jettonMinter.getJettonData()).cappedSupply;
         const nonDeployerWallet = await userWallet(user.address);
 
         const res = await jettonMinter.sendMint(
@@ -90,7 +91,25 @@ describe('State init tests', () => {
             success: true,
             deploy: true
         });
+    });
 
-        printTransactionFees(res.transactions);
+    it('should not mint more than capped supply', async () => {
+        const moreThenMaxValue = (await jettonMinter.getJettonData()).cappedSupply + 1n;
+        // const nonDeployerWallet = await userWallet(user.address);
+
+        const res = await jettonMinter.sendMint(
+            user.getSender(),
+            user.address,
+            moreThenMaxValue,
+            toNano('0.05'),
+            toNano('1')
+        );
+
+        expect(res.transactions).toHaveTransaction({
+            from: user.address,
+            to: jettonMinter.address,
+            aborted: true,
+            exitCode: 256,
+        });
     });
 });

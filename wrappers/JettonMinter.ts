@@ -9,13 +9,15 @@ export type JettonMinterContent = {
 export type JettonMinterConfig = {
     admin: Address;
     jetton_content: Cell | JettonMinterContent;
-    wallet_code: Cell
+    wallet_code: Cell;
+    capped_supply: BigInt;
 };
 
 export function jettonMinterConfigToCell(config: JettonMinterConfig): Cell {
     const content = config.jetton_content instanceof Cell ? config.jetton_content : jettonContentToCell(config.jetton_content);
 
     return beginCell()
+                      .storeCoins(0)
                       .storeCoins(0)
                       .storeAddress(config.admin)
                       .storeRef(content)
@@ -127,14 +129,14 @@ export class JettonMinter implements Contract {
         const res = await provider.get('get_jetton_data', []);
 
         const totalSupply = res.stack.readBigNumber();
-        const mintable = res.stack.readBoolean();
+        const cappedSupply = res.stack.readBigNumber();
         const adminAddress = res.stack.readAddress();
         const content = res.stack.readCell();
         const walletCode = res.stack.readCell();
 
         return {
             totalSupply,
-            mintable,
+            cappedSupply,
             adminAddress,
             content,
             walletCode
