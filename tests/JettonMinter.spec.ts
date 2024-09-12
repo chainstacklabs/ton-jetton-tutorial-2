@@ -15,6 +15,9 @@ let jwallet_code_raw: Cell;
 let jwallet_code: Cell;
 let userWallet: (address: Address) => Promise<SandboxContract<JettonWallet>>;
 
+const capped_supply = 1000n;
+const price = toNano('0.01'); // 0.01 TON per a minted token
+
 describe('State init tests', () => {
     beforeAll(async () => {
         blockchain = await Blockchain.create();
@@ -43,7 +46,8 @@ describe('State init tests', () => {
                     jetton_content: jettonContentToCell({
                         uri: "https://ton.org/"
                     }),
-                    capped_supply: 1000n
+                    capped_supply: capped_supply,
+                    price: price
                 },
                 minter_code));
 
@@ -91,25 +95,31 @@ describe('State init tests', () => {
             success: true,
             deploy: true
         });
+
+        printTransactionFees(res.transactions);
     });
 
     it('should not mint more than capped supply', async () => {
         const moreThenMaxValue = (await jettonMinter.getJettonData()).cappedSupply + 1n;
-        // const nonDeployerWallet = await userWallet(user.address);
 
         const res = await jettonMinter.sendMint(
             user.getSender(),
             user.address,
             moreThenMaxValue,
             toNano('0.05'),
-            toNano('1')
+            toNano('100')
         );
 
         expect(res.transactions).toHaveTransaction({
             from: user.address,
             to: jettonMinter.address,
-            aborted: true,
+            aborted: true, // High exit codes are considered to be fatal
             exitCode: 256,
         });
+    });
+
+    it('should get valid price', async () => {
+        const minterPrice = await jettonMinter.getTokenPrice();
+        expect(minterPrice).toEqual(price);
     });
 });

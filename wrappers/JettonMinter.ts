@@ -10,7 +10,8 @@ export type JettonMinterConfig = {
     admin: Address;
     jetton_content: Cell | JettonMinterContent;
     wallet_code: Cell;
-    capped_supply: BigInt;
+    capped_supply: bigint;
+    price: bigint;
 };
 
 export function jettonMinterConfigToCell(config: JettonMinterConfig): Cell {
@@ -18,7 +19,8 @@ export function jettonMinterConfigToCell(config: JettonMinterConfig): Cell {
 
     return beginCell()
                       .storeCoins(0)
-                      .storeCoins(0)
+                      .storeCoins(config.capped_supply)
+                      .storeUint(config.price, 32)
                       .storeAddress(config.admin)
                       .storeRef(content)
                       .storeRef(config.wallet_code)
@@ -130,6 +132,7 @@ export class JettonMinter implements Contract {
 
         const totalSupply = res.stack.readBigNumber();
         const cappedSupply = res.stack.readBigNumber();
+        const price = res.stack.readBigNumber();
         const adminAddress = res.stack.readAddress();
         const content = res.stack.readCell();
         const walletCode = res.stack.readCell();
@@ -137,6 +140,7 @@ export class JettonMinter implements Contract {
         return {
             totalSupply,
             cappedSupply,
+            price,
             adminAddress,
             content,
             walletCode
@@ -150,5 +154,11 @@ export class JettonMinter implements Contract {
         }])
 
         return res.stack.readAddress()
+    }
+
+    async getTokenPrice(provider: ContractProvider): Promise<BigInt> {
+        const res = await provider.get('get_token_price', []);
+
+        return res.stack.readBigNumber()
     }
 }
