@@ -8,9 +8,9 @@ import { Op, Errors } from '../wrappers/JettonConstants';
 
 let blockchain: Blockchain;
 let deployer: SandboxContract<TreasuryContract>;
+let user: SandboxContract<TreasuryContract>;
 let jettonMinter:SandboxContract<JettonMinter>;
 let minter_code: Cell;
-let wallet_code: Cell;
 let jwallet_code_raw: Cell;
 let jwallet_code: Cell;
 let userWallet: (address: Address) => Promise<SandboxContract<JettonWallet>>;
@@ -19,6 +19,7 @@ describe('State init tests', () => {
     beforeAll(async () => {
         blockchain = await Blockchain.create();
         deployer   = await blockchain.treasury('deployer');
+        user   = await blockchain.treasury('user');
         jwallet_code_raw = await compile('JettonWallet');
         minter_code    = await compile('JettonMinter');
 
@@ -73,18 +74,18 @@ describe('State init tests', () => {
 
     it('should mint max jetton walue', async () => {
         const maxValue = (2n ** 120n) - 1n;
-        const deployerWallet = await userWallet(deployer.address);
+        const nonDeployerWallet = await userWallet(user.address);
 
         const res = await jettonMinter.sendMint(
-            deployer.getSender(),
-            deployer.address,
+            user.getSender(),
+            user.address,
             maxValue,
             toNano('0.05'),
             toNano('1')
         );
 
         expect(res.transactions).toHaveTransaction({
-            on: deployerWallet.address,
+            on: nonDeployerWallet.address,
             op: Op.internal_transfer,
             success: true,
             deploy: true
