@@ -77,39 +77,62 @@ describe('State init tests', () => {
         });
     });
 
-    it('should mint max jetton walue', async () => {
-        const maxValue = (await jettonMinter.getJettonData()).cappedSupply;
-        const nonDeployerWallet = await userWallet(user.address);
+    it.skip('should mint max supply', async () => {
+        // Calculate costs of minting
+        const jettonsToPurchase = (await jettonMinter.getJettonData()).cappedSupply;
+        const jettonsCost = jettonsToPurchase * price;
+        const amountToSend = jettonsCost + toNano('1');  // Assuming 1 TON for storage fees
+        const forwardFee = toNano('0.01');
+        const expectedMintedJettons = jettonsCost / price;
 
+        // Retrieve initial balance and supply
+        const userJettonWallet = await userWallet(user.address);
+        const initUserJettonBalance = await userJettonWallet.getJettonBalance();
+        const initJettonSupply = (await jettonMinter.getJettonData()).totalSupply;
+
+        // Send the minting message
         const res = await jettonMinter.sendMint(
             user.getSender(),
             user.address,
-            maxValue,
-            toNano('0.05'),
-            toNano('1')
+            forwardFee,
+            amountToSend
         );
 
+        // Verify the transaction
         expect(res.transactions).toHaveTransaction({
-            on: nonDeployerWallet.address,
+            on: userJettonWallet.address,
             op: Op.internal_transfer,
             success: true,
             deploy: true
         });
 
-        printTransactionFees(res.transactions);
+        // Verify that the user's minted jettons match the expected amount
+        const currentUserJettonBalance = await userJettonWallet.getJettonBalance();
+        const mintedUserJettons = currentUserJettonBalance - initUserJettonBalance;
+        expect(mintedUserJettons).toEqual(expectedMintedJettons);
+
+        // Verify that the total supply matches the expected amount of minted jettons
+        const updatedTotalSupply = (await jettonMinter.getJettonData()).totalSupply;
+        const mintedTotalSupply = updatedTotalSupply - initJettonSupply;
+        expect(mintedTotalSupply).toEqual(expectedMintedJettons);
     });
 
     it('should not mint more than capped supply', async () => {
-        const moreThenMaxValue = (await jettonMinter.getJettonData()).cappedSupply + 1n;
+        // Calculate costs of minting
+        const jettonsToPurchase = (await jettonMinter.getJettonData()).cappedSupply + 1n;
+        const jettonsCost = jettonsToPurchase * price;
+        const amountToSend = jettonsCost + toNano('1');  // Assuming 1 TON for storage fees
+        const forwardFee = toNano('0.01');
 
+        // Send the minting message
         const res = await jettonMinter.sendMint(
             user.getSender(),
             user.address,
-            moreThenMaxValue,
-            toNano('0.05'),
-            toNano('100')
+            forwardFee,
+            amountToSend
         );
 
+        // Verify the transaction
         expect(res.transactions).toHaveTransaction({
             from: user.address,
             to: jettonMinter.address,
@@ -121,5 +144,47 @@ describe('State init tests', () => {
     it('should get valid price', async () => {
         const minterPrice = await jettonMinter.getTokenPrice();
         expect(minterPrice).toEqual(price);
+    });
+
+    it('should mint correct amount of jettons based on the sent TON amount', async () => {
+        // Calculate costs of minting
+        const jettonsToPurchase = (await jettonMinter.getJettonData()).cappedSupply;
+        const jettonsCost = jettonsToPurchase * price;
+        const amountToSend = jettonsCost + toNano('1');  // Assuming 1 TON for storage fees
+        const forwardFee = toNano('0.01');
+        const expectedMintedJettons = jettonsCost / price;
+
+        // Retrieve initial balance and supply
+        const userJettonWallet = await userWallet(user.address);
+        const initUserJettonBalance = await userJettonWallet.getJettonBalance();
+        const initJettonSupply = (await jettonMinter.getJettonData()).totalSupply;
+
+        // Send the minting message
+        const res = await jettonMinter.sendMint(
+            user.getSender(),
+            user.address,
+            forwardFee,
+            amountToSend
+        );
+
+        // Verify the transaction
+        expect(res.transactions).toHaveTransaction({
+            on: userJettonWallet.address,
+            op: Op.internal_transfer,
+            success: true,
+            deploy: true
+        });
+
+        // Verify that the user's minted jettons match the expected amount
+        const currentUserJettonBalance = await userJettonWallet.getJettonBalance();
+        const mintedUserJettons = currentUserJettonBalance - initUserJettonBalance;
+        expect(mintedUserJettons).toEqual(expectedMintedJettons);
+
+        // Verify that the total supply matches the expected amount of minted jettons
+        const updatedTotalSupply = (await jettonMinter.getJettonData()).totalSupply;
+        const mintedTotalSupply = updatedTotalSupply - initJettonSupply;
+        expect(mintedTotalSupply).toEqual(expectedMintedJettons);
+
+        printTransactionFees(res.transactions);
     });
 });

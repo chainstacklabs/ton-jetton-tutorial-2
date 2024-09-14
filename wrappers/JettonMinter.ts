@@ -54,48 +54,20 @@ export class JettonMinter implements Contract {
         });
     }
 
-    protected static jettonInternalTransfer(jetton_amount: bigint,
-                                            forward_ton_amount: bigint,
-                                            response_addr?: Address,
-                                            query_id: number | bigint = 0) {
-        return beginCell()
-                .storeUint(Op.internal_transfer, 32)
-                .storeUint(query_id, 64)
-                .storeCoins(jetton_amount)
-                .storeAddress(null)
-                .storeAddress(response_addr)
-                .storeCoins(forward_ton_amount)
-                .storeBit(false)
-               .endCell();
-
-    }
-
-    static mintMessage(from: Address, to: Address, jetton_amount: bigint, forward_ton_amount: bigint, total_ton_amount: bigint, query_id: number | bigint = 0) {
-		const mintMsg = beginCell().storeUint(Op.internal_transfer, 32)
-                                   .storeUint(0, 64)
-                                   .storeCoins(jetton_amount)
-                                   .storeAddress(null)
-                                   .storeAddress(from) // Response addr
-                                   .storeCoins(forward_ton_amount)
-                                   .storeMaybeRef(null)
-                    .endCell();
-
+    static mintMessage(from: Address, to: Address, query_id: number | bigint = 0) {
         return beginCell().storeUint(Op.mint, 32).storeUint(query_id, 64) // op, queryId
                           .storeAddress(to)
-                          .storeCoins(total_ton_amount)
-                          .storeCoins(jetton_amount)
-                          .storeRef(mintMsg)
                .endCell();
     }
 
-    async sendMint(provider: ContractProvider, via: Sender, to: Address, jetton_amount: bigint, forward_ton_amount: bigint, total_ton_amount: bigint) {
+    async sendMint(provider: ContractProvider, via: Sender, to: Address, forward_ton_amount: bigint, total_ton_amount: bigint) {
         if(total_ton_amount < forward_ton_amount) {
             throw new Error("Total ton amount should be > forward amount");
         }
         await provider.internal(via, {
             sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: JettonMinter.mintMessage(this.address, to, jetton_amount, forward_ton_amount, total_ton_amount),
-            value: total_ton_amount + toNano('0.015'),
+            body: JettonMinter.mintMessage(this.address, to),
+            value: total_ton_amount
         });
     }
 

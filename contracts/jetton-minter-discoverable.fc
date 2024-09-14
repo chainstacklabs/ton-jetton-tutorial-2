@@ -9,6 +9,8 @@
 ;; ceil(6905000) = 10000000 ~= 0.01 TON
 int provide_address_gas_consumption() asm "10000000 PUSHINT";
 
+const int min_tons_for_storage = 1000000000; ;; 1 TON
+
 ;; storage scheme
 ;; storage#_ total_supply:Coins admin_address:MsgAddress content:^Cell jetton_wallet_code:^Cell = Storage;
 
@@ -72,18 +74,25 @@ int provide_address_gas_consumption() asm "10000000 PUSHINT";
     (int total_supply, int capped_supply, int price, slice admin_address, cell content, cell jetton_wallet_code) = load_data();
 
     if (op == op::mint()) {
-        ;;throw_unless(73, equal_slices(sender_address, admin_address));
         slice to_address = in_msg_body~load_msg_addr();
-        int amount = in_msg_body~load_coins();
-        cell master_msg = in_msg_body~load_ref();
-        slice master_msg_cs = master_msg.begin_parse();
-        master_msg_cs~skip_bits(32 + 64); ;; op + query_id
-        int jetton_amount = master_msg_cs~load_coins();
-        
+
+        int buy_amount = msg_value - min_tons_for_storage;
+        int jetton_amount = muldiv(buy_amount, 1, price);
+
         ;; Check if minting exceeds the capped supply
         throw_unless(256, total_supply + jetton_amount <= capped_supply);
 
-        mint_tokens(to_address, jetton_wallet_code, amount, master_msg);
+        var mint_request = begin_cell()
+                        .store_uint(op::internal_transfer(), 32)
+                        .store_uint(0, 64)
+                        .store_coins(jetton_amount) ;; max 124 bit
+                        .store_uint(0, 2) ;; from_address, addr_none$00
+                        .store_slice(my_address()) ;; response_address, 3 + 8 + 256 = 267 bit
+                        .store_coins(0) ;; forward_amount, 4 bit if zero
+                        .store_uint(0, 1) ;; no forward_payload, 1 bit
+                        .end_cell();
+
+        mint_tokens(to_address, jetton_wallet_code, min_tons_for_storage, mint_request);
         save_data(total_supply + jetton_amount, capped_supply, price, admin_address, content, jetton_wallet_code);
         return ();
     }
