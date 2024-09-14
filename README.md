@@ -1,6 +1,6 @@
-# TON: How to develop fungible tokens (Jettons)
+# TON: How to customize fungible tokens (Jettons)
 
-For the full breakdown, see [TON: How to develop fungible tokens (Jettons)](https://docs.chainstack.com/docs/ton-how-to-develop-fungible-tokens-jettons).
+For the full breakdown, see [TON: How to customize fungible tokens (Jettons)](https://docs.chainstack.com/docs/ton-how-to-customize-fungible-tokens-jettons).
 
 ## References
 
