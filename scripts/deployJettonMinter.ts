@@ -18,7 +18,9 @@ export async function run(provider: NetworkProvider) {
     const minter = provider.open(JettonMinter.createFromConfig({
             admin: adminAddress.address,
             wallet_code: jettonWalletCode,
-            jetton_content: {type: 1, uri: jettonMetadataUri}
+            jetton_content: {type: 1, uri: jettonMetadataUri},
+            capped_supply: 1000n,
+            price: toNano('0.01')
         },
         await compile('JettonMinter'))
     );
