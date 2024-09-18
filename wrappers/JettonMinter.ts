@@ -103,16 +103,14 @@ export class JettonMinter implements Contract {
         const res = await provider.get('get_jetton_data', []);
 
         const totalSupply = res.stack.readBigNumber();
-        const cappedSupply = res.stack.readBigNumber();
-        const price = res.stack.readBigNumber();
+        const mintable = res.stack.readBoolean();
         const adminAddress = res.stack.readAddress();
         const content = res.stack.readCell();
         const walletCode = res.stack.readCell();
 
         return {
             totalSupply,
-            cappedSupply,
-            price,
+            mintable,
             adminAddress,
             content,
             walletCode
@@ -128,9 +126,15 @@ export class JettonMinter implements Contract {
         return res.stack.readAddress()
     }
 
-    async getTokenPrice(provider: ContractProvider): Promise<BigInt> {
-        const res = await provider.get('get_token_price', []);
+    async getSupplyPrice(provider: ContractProvider) {
+        const res = await provider.get('get_supply_price', []);
 
-        return res.stack.readBigNumber()
+        const cappedSupply = res.stack.readBigNumber();
+        const price = res.stack.readBigNumber();
+
+        return {
+            cappedSupply,
+            price
+        }
     }
 }

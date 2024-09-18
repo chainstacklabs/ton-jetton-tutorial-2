@@ -155,9 +155,9 @@ const int min_tons_for_storage = 1000000000; ;; 1 TON
     throw(0xffff);
 }
 
-(int, int, int, slice, cell, cell) get_jetton_data() method_id {
-    (int total_supply, int capped_supply, int price, slice admin_address, cell content, cell jetton_wallet_code) = load_data();
-    return (total_supply, capped_supply, price, admin_address, content, jetton_wallet_code);
+(int, int, slice, cell, cell) get_jetton_data() method_id {
+    (int total_supply, _, _, slice admin_address, cell content, cell jetton_wallet_code) = load_data();
+    return (total_supply, -1, admin_address, content, jetton_wallet_code);
 }
 
 slice get_wallet_address(slice owner_address) method_id {
@@ -165,7 +165,7 @@ slice get_wallet_address(slice owner_address) method_id {
     return calculate_user_jetton_wallet_address(owner_address, my_address(), jetton_wallet_code);
 }
 
-int get_token_price() method_id {
-    (_, _, int price, _, _, _) = load_data();
-    return price;
+(int, int) get_supply_price() method_id {
+    (_, int capped_supply, int price, _, _, _) = load_data();
+    return (capped_supply, price);
 }

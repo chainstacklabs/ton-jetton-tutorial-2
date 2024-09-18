@@ -79,7 +79,7 @@ describe('State init tests', () => {
 
     it.skip('should mint max supply', async () => {
         // Calculate costs of minting
-        const jettonsToPurchase = (await jettonMinter.getJettonData()).cappedSupply;
+        const jettonsToPurchase = (await jettonMinter.getSupplyPrice()).cappedSupply;
         const jettonsCost = jettonsToPurchase * price;
         const amountToSend = jettonsCost + toNano('1');  // Assuming 1 TON for storage fees
         const forwardFee = toNano('0.01');
@@ -119,7 +119,7 @@ describe('State init tests', () => {
 
     it('should not mint more than capped supply', async () => {
         // Calculate costs of minting
-        const jettonsToPurchase = (await jettonMinter.getJettonData()).cappedSupply + 1n;
+        const jettonsToPurchase = (await jettonMinter.getSupplyPrice()).cappedSupply + 1n;
         const jettonsCost = jettonsToPurchase * price;
         const amountToSend = jettonsCost + toNano('1');  // Assuming 1 TON for storage fees
         const forwardFee = toNano('0.01');
@@ -142,13 +142,13 @@ describe('State init tests', () => {
     });
 
     it('should get valid price', async () => {
-        const minterPrice = await jettonMinter.getTokenPrice();
+        const minterPrice = (await jettonMinter.getSupplyPrice()).price;
         expect(minterPrice).toEqual(price);
     });
 
     it('should mint correct amount of jettons based on the sent TON amount', async () => {
         // Calculate costs of minting
-        const jettonsToPurchase = (await jettonMinter.getJettonData()).cappedSupply;
+        const jettonsToPurchase = (await jettonMinter.getSupplyPrice()).cappedSupply;
         const jettonsCost = jettonsToPurchase * price;
         const amountToSend = jettonsCost + toNano('1');  // Assuming 1 TON for storage fees
         const forwardFee = toNano('0.01');
